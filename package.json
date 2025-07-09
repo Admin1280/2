@@ -1,0 +1,29 @@
+{
+  "name": "websiteiliu",
+  "version": "1.0.0",
+  "description": "Static website project",
+  "main": "index.html",
+  "scripts": {
+    "dev": "live-server --port=3000 --open=index.html",
+    "start": "live-server --port=3000",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "live-server": "^1.2.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Admin1280/1.git"
+  },
+  "keywords": [],
+  "bugs": {
+    "url": "https://github.com/Admin1280/1/issues"
+  },
+  "homepage": "https://github.com/Admin1280/1#readme",
+  "dependencies": {
+    "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1"
+  }
+}

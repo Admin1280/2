@@ -5,153 +5,138 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>工程创新实践——造卡丁车</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            margin: 0;
-            overflow: hidden;
-            height: 100vh;
-            position: relative;
-        }
-        
-        /* 新增视频背景 */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { margin: 0; overflow: hidden; height: 100vh; position: relative; }
         .video-background {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
             height: 100%;
-            z-index: -1;
+            z-index: -1; 
             object-fit: cover;
         }
-        
         .header {
-            position: absolute;
-            top: 20px;
-            left: 0;
-            width: 100%;
+            position: absolute; 
+            top: 20px; 
+            left: 0; 
+            width: 100%; 
             text-align: center;
-            z-index: 100;
-            color: white;
+            z-index: 100; 
+            color: white; 
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
         }
-        
-        .header h1 {
-            font-size: 3rem;
-            margin-bottom: 10px;
-            font-family: '华文行楷', cursive;
+        .header h1 { 
+            font-size: 3rem; 
+            margin-bottom: 10px; 
+            font-family: '华文行楷', cursive; 
         }
-        
-        .header p {
-            font-size: 1.5rem;
-            font-family: '华文行楷', cursive;
+        .header p { 
+            font-size: 1.5rem; 
+            font-family: '华文行楷', cursive; 
         }
-        
-        /* 保持原始气泡样式不变 */
         .bubble {
-            position: absolute;
+            position: absolute; 
             border-radius: 50%;
             background: rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(5px);
+            backdrop-filter: blur(5px); 
             border: 1px solid rgba(255, 255, 255, 0.5);
             box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
-            display: flex;
-            flex-direction: column;
+            display: flex; 
+            flex-direction: column; 
             justify-content: center;
-            align-items: center;
-            color: white;
+            align-items: center; 
+            color: white; 
             cursor: pointer;
-            transition: all 0.5s ease;
-            z-index: 10;
+            transition: all 0.5s ease; 
+            z-index: 10; 
             overflow: hidden;
         }
-        
         .bubble:hover {
-            transform: scale(2);
-            background: rgba(255, 255, 255, 0.4);
+            transform: scale(2); 
+            background: rgba(255, 255, 255, 0.4); 
             z-index: 20;
         }
-        
-        .bubble:hover ~ .bubble {
-            filter: blur(2px);
-            opacity: 0.7;
+        .bubble:hover ~ .bubble { filter: blur(2px); opacity: 0.7; }
+        .bubble h2 { 
+            font-size: 1.2rem; 
+            margin-bottom: 5px; 
+            font-family: '华文行楷', cursive; 
         }
-        
-        .bubble h2 {
-            font-size: 1.2rem;
-            margin-bottom: 5px;
-            font-family: '华文行楷', cursive;
+        .bubble p { 
+            font-size: 0.9rem; 
+            font-family: '华文行楷', cursive; 
         }
-        
-        .bubble p {
-            font-size: 0.9rem;
-            font-family: '华文行楷', cursive;
-        }
-        
-        .bubble::before {
-            content: '';
-            position: absolute;
-            top: 10%;
-            left: 20%;
-            width: 20px;
-            height: 20px;
+        .bubble::before, .bubble::after {
+            content: ''; 
+            position: absolute; 
+            border-radius: 50%;
             background: rgba(255, 255, 255, 0.4);
-            border-radius: 50%;
         }
-        
-        .bubble::after {
-            content: '';
-            position: absolute;
-            top: 30%;
-            left: 60%;
-            width: 15px;
-            height: 15px;
-            background: rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-        }
-        
+        .bubble::before { top: 10%; left: 20%; width: 20px; height: 20px; }
+        .bubble::after { top: 30%; left: 60%; width: 15px; height: 15px; }
         @keyframes pop {
             0% { transform: scale(1); opacity: 1; }
             50% { transform: scale(1.5); opacity: 0.5; }
             100% { transform: scale(0); opacity: 0; }
         }
-        
-        .pop {
-            animation: pop 0.5s forwards;
+        .pop { animation: pop 0.5s forwards; }
+        .notification {
+            position: fixed; 
+            bottom: 20px; 
+            right: 20px;
+            background: rgba(0,0,0,0.7); 
+            color: white;
+            padding: 10px 20px; 
+            border-radius: 5px;
+            transform: translateX(200%); 
+            transition: transform 0.3s;
         }
+        .notification.show { transform: translateX(0); }
     </style>
 </head>
 <body>
-    <!-- 新增视频背景 -->
+    <!-- 背景视频 -->
     <video autoplay muted loop class="video-background">
         <source src="assets/videos/background.mp4" type="video/mp4">
         您的浏览器不支持视频背景
     </video>
     
-    <!-- 保持原始header不变 -->
     <div class="header">
         <h1>工程创新实践</h1>
         <p>造卡丁车项目组</p>
     </div>
+
+    <div class="notification" id="notification"></div>
     
+    <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
     <script>
-        // 保持原始成员数据不变
-        const members = [
+        // 初始化WebSocket连接
+        const socket = io();
+        const notification = document.getElementById('notification');
+        
+        // 成员初始数据
+        let members = [
             { name: "何宇豪", role: "电池组", color: "rgba(245, 247, 250, 0.7)", size: 100 },
             { name: "刘清轶", role: "电池组", color: "rgba(161, 196, 253, 0.7)", size: 120 },
             { name: "李奕乐", role: "电控组", color: "rgba(240, 147, 251, 0.7)", size: 90 },
             { name: "陈品运", role: "电控组", color: "rgba(79, 172, 254, 0.7)", size: 110 },
             { name: "叶雨桐", role: "电驱组", color: "rgba(67, 233, 123, 0.7)", size: 95 }
         ];
-        
-        // 保持原始气泡逻辑完全不变
+
         const bubbles = [];
         const bubbleSpeeds = [1, 1.2, 0.8, 1.1, 0.9];
-        
+
+        // 显示通知
+        function showNotification(message) {
+            notification.textContent = message;
+            notification.classList.add('show');
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+
+        // 创建气泡
         function createBubbles() {
             members.forEach((member, index) => {
                 const bubble = document.createElement('div');
@@ -180,15 +165,21 @@
                     role: member.role
                 });
                 
+                // 点击事件
                 bubble.addEventListener('click', function() {
                     bubble.classList.add('pop');
+                    socket.emit('member-clicked', {
+                        name: member.name,
+                        role: member.role
+                    });
                     setTimeout(() => {
                         window.location.href = `member.html?name=${encodeURIComponent(member.name)}&role=${encodeURIComponent(member.role)}`;
                     }, 500);
                 });
             });
         }
-        
+
+        // 更新气泡位置
         function updateBubbles() {
             bubbles.forEach(bubble => {
                 let top = parseFloat(bubble.element.style.top);
@@ -204,12 +195,33 @@
             
             requestAnimationFrame(updateBubbles);
         }
-        
+
+        // WebSocket事件监听
+        socket.on('connect', () => {
+            showNotification('已连接到实时服务器');
+        });
+
+        socket.on('member-updated', (updatedMember) => {
+            const bubble = bubbles.find(b => b.name === updatedMember.name);
+            if (bubble) {
+                bubble.element.style.background = updatedMember.color;
+                bubble.element.style.width = `${updatedMember.size}px`;
+                bubble.element.style.height = `${updatedMember.size}px`;
+                showNotification(`${updatedMember.name}的状态已更新`);
+            }
+        });
+
+        socket.on('user-connected', (username) => {
+            showNotification(`${username} 加入了项目`);
+        });
+
+        // 初始化
         window.addEventListener('load', () => {
             createBubbles();
             updateBubbles();
+            socket.emit('user-joined', '匿名用户');
         });
-        
+
         window.addEventListener('resize', () => {
             bubbles.forEach(bubble => {
                 if (parseFloat(bubble.element.style.left) > window.innerWidth - bubble.size) {
