@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>成员日志</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+        
+        body {
+            color: #333;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+        
+        /* 顶部控制球体容器 */
+        .control-spheres {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            padding-top: 20px;
+            z-index: 300;
+        }
+        
+        /* 控制球体样式 */
+        .control-sphere {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            position: relative;
+            animation: bounce 2s infinite ease-in-out;
+            transition: all 0.3s;
+        }
+        
+        /* 球体连接线 */
+        .control-sphere::before {
+            content: '';
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 2px;
+            height: 20px;
+            background: rgba(255,255,255,0.6);
+        }
+        
+        .control-sphere:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.3);
+        }
+        
+        /* 球体跳动动画 */
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-15px); }
+        }
+        
+        /* 延迟动画 */
+        .control-sphere:nth-child(2) { animation-delay: 0.3s; }
+        .control-sphere:nth-child(3) { animation-delay: 0.6s; }
+        
+        /* 视频背景 */
+        .video-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -2;
+            overflow: hidden;
+        }
+        
+        .bg-video {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            min-width: 100%;
+            min-height: 100%;
+            opacity: 0.7;
+            object-fit: cover;
+        }
+        
+        /* 半透明遮罩 */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.1);
+            z-index: -1;
+        }
+        
+        /* 纸飞机样式 */
+        .paper-plane {
+            position: fixed;
+            width: 120px;
+            height: 120px;
+            opacity: 0.5;
+            z-index: 100;
+            cursor: pointer;
+            transition: all 0.3s;
+            background-size: contain;
+            background-repeat: no-repeat;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 14px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
+            text-align: center;
+        }
+        
+        /* 普通纸飞机 - 蓝色 */
+        .paper-plane:not(.photo-plane) {
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="%233498db" d="M22,2L11,13l4,1l-4,8l2.5-6.5L17,16l1,4L22,2z"/></svg>');
+        }
+        
+        /* 照片纸飞机 - 橙色 */
+        .photo-plane {
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="%23e67e22" d="M22,2L11,13l4,1l-4,8l2.5-6.5L17,16l1,4L22,2z"/></svg>');
+        }
+        
+        .paper-plane:hover {
+            opacity: 0.8;
+            transform: scale(1.2);
+        }
+        
+        /* 成员日志容器 */
+        .member-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 30px;
+            background: rgba(255, 255, 255, 0.85);
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            position: relative;
+            margin-top: 100px;
+            margin-bottom: 30px;
+        }
+        
+        /* 六个可编辑内容卡片容器 */
+        .edit-container {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90%;
+            max-width: 1000px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 10px;
+            padding: 20px;
+            z-index: 200;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        /* 日期选择器样式 */
+        .date-selector {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .date-selector label {
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        
+        .date-selector input {
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+        
+        .edit-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .edit-card {
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .edit-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #2c3e50;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+        }
+        
+        .edit-content {
+            min-height: 120px;
+        }
+        
+        .edit-content textarea {
+            width: 100%;
+            height: 100px;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            resize: vertical;
+            background: rgba(255,255,255,0.8);
+        }
+        
+        /* 照片上传区域 */
+        .photo-upload {
+            margin-top: 10px;
+        }
+        
+        .photo-preview {
+            max-width: 100%;
+            max-height: 150px;
+            margin-top: 10px;
+            display: none;
+        }
+        
+        /* 表单按钮 */
+        .form-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+        
+        .form-buttons button {
+            padding: 8px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        
+        #save-edit {
+            background: #27ae60;
+            color: white;
+        }
+        
+        #cancel-edit {
+            background: #e74c3c;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <!-- 顶部控制球体 -->
+    <div class="control-spheres">
+        <div class="control-sphere" id="save-sphere" title="保存数据">💾</div>
+        <div class="control-sphere" id="import-sphere" title="导入数据">📥</div>
+        <div class="control-sphere" id="export-sphere" title="导出数据">📤</div>
+    </div>
+    
+    <!-- 背景视频 -->
+    <div class="video-background">
+        <video autoplay muted loop class="bg-video">
+            <source id="member-video" src="" type="video/mp4">
+        </video>
+    </div>
+    <div class="overlay"></div>
+    
+    <!-- 六个纸飞机元素 -->
+    <div class="paper-plane" id="principle-plane" title="任务工作原理">工作原理</div>
+    <div class="paper-plane" id="content-plane" title="实习内容">实习内容</div>
+    <div class="paper-plane" id="problem-plane" title="遇到的问题">问题</div>
+    <div class="paper-plane" id="solution-plane" title="解决方法">解决</div>
+    <div class="paper-plane" id="harvest-plane" title="收获与体会">收获</div>
+    <div class="paper-plane photo-plane" id="photo-plane" title="添加照片">照片</div>
+    
+    <!-- 成员日志容器 -->
+    <div class="member-container">
+        <div class="member-header">
+            <a href="index.html" class="back-btn">返回主页</a>
+            <h1 id="member-name">成员姓名</h1>
+            <h2 id="member-role">成员角色</h2>
+        </div>
+
+        <!-- 日志内容容器 -->
+        <div id="log-container">
+            <!-- 日志内容将在这里显示 -->
+        </div>
+    </div>
+
+    <!-- 可编辑内容容器 -->
+    <div class="edit-container" id="editContainer">
+        <div class="date-selector">
+            <label for="edit-date">选择日期：</label>
+            <input type="date" id="edit-date">
+        </div>
+        <div class="edit-grid">
+            <div class="edit-card">
+                <div class="edit-title">任务工作原理</div>
+                <div class="edit-content">
+                    <textarea id="edit-principle" placeholder="描述任务的基本原理..."></textarea>
+                </div>
+            </div>
+            <div class="edit-card">
+                <div class="edit-title">实习内容</div>
+                <div class="edit-content">
+                    <textarea id="edit-content" placeholder="描述实习期间的具体工作..."></textarea>
+                </div>
+            </div>
+            <div class="edit-card">
+                <div class="edit-title">遇到的问题</div>
+                <div class="edit-content">
+                    <textarea id="edit-problems" placeholder="描述工作中遇到的困难..."></textarea>
+                </div>
+            </div>
+            <div class="edit-card">
+                <div class="edit-title">解决方法</div>
+                <div class="edit-content">
+                    <textarea id="edit-solutions" placeholder="描述如何解决问题..."></textarea>
+                </div>
+            </div>
+            <div class="edit-card">
+                <div class="edit-title">收获与体会</div>
+                <div class="edit-content">
+                    <textarea id="edit-harvest" placeholder="分享你的收获和心得..."></textarea>
+                </div>
+            </div>
+            <div class="edit-card">
+                <div class="edit-title">照片</div>
+                <div class="edit-content">
+                    <div class="photo-upload">
+                        <input type="file" id="edit-photo-upload" accept="image/*">
+                        
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="form-buttons">
+            <button id="save-edit">保存</button>
+            <button id="cancel-edit">取消</button>
+        </div>
+    </div>
+
+    <!-- 文件输入元素 -->
+    <input type="file" id="file-input" accept=".json" style="display: none;">
+
+    <script>
+        // 从URL获取成员信息
+        const urlParams = new URLSearchParams(window.location.search);
+        const memberName = urlParams.get('name');
+        const memberRole = urlParams.get('role');
+        
+        // 设置页面标题和成员信息
+        document.title = `${memberName}的日志 - 造卡丁车项目`;
+        document.getElementById('member-name').textContent = memberName;
+        document.getElementById('member-role').textContent = memberRole;
+        
+        // 设置成员专属背景视频
+        const memberVideos = {
+            '何宇豪': 'assets/videos/battery.mp4',
+            '刘清轶': 'assets/videos/battery2.mp4',
+            '李奕乐': 'assets/videos/control.mp4',
+            '陈品运': 'assets/videos/control2.mp4',
+            '叶雨桐': 'assets/videos/drive.mp4'
+        };
+        
+        const videoElement = document.querySelector('.bg-video');
+        videoElement.src = memberVideos[memberName] || 'assets/videos/default.mp4';
+        
+        // 控制球体功能
+        document.getElementById('save-sphere').addEventListener('click', saveLogs);
+        document.getElementById('import-sphere').addEventListener('click', () => document.getElementById('file-input').click());
+        document.getElementById('export-sphere').addEventListener('click', exportLogs);
+        
+        // 保存所有日志
+        function saveLogs() {
+            const logs = getCurrentLogs();
+            localStorage.setItem(`kartLogs_${memberName}`, JSON.stringify(logs));
+            alert('数据保存成功！');
+            this.textContent = '✓';
+            setTimeout(() => this.textContent = '💾', 1000);
+        }
+        
+        // 导出日志
+        function exportLogs() {
+            const logs = getCurrentLogs();
+            const dataStr = JSON.stringify(logs, null, 2);
+            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+            const link = document.createElement('a');
+            link.setAttribute('href', dataUri);
+            link.setAttribute('download', `${memberName}_日志.json`);
+            link.click();
+            this.textContent = '✓';
+            setTimeout(() => this.textContent = '📤', 1000);
+        }
+        
+        // 导入日志
+        document.getElementById('file-input').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedLogs = JSON.parse(e.target.result);
+                    if (Array.isArray(importedLogs)) {
+                        if (confirm(`确定要导入 ${importedLogs.length} 条日志吗？`)) {
+                            localStorage.setItem(`kartLogs_${memberName}`, JSON.stringify(importedLogs));
+                            renderLogs();
+                            alert('数据导入成功！');
+                        }
+                    } else {
+                        alert('导入的文件格式不正确');
+                    }
+                } catch (error) {
+                    alert('导入失败: ' + error.message);
+                }
+            };
+            reader.readAsText(file);
+        });
+        
+        // 纸飞机点击事件 - 显示可编辑内容
+        document.querySelectorAll('.paper-plane').forEach(plane => {
+            plane.addEventListener('click', function() {
+                // 设置日期为今天
+                const today = new Date().toISOString().split('T')[0];
+                document.getElementById('edit-date').value = today;
+                
+                // 加载今天的日志或创建新日志
+                loadLogForEdit(today);
+                
+                // 显示编辑容器
+                document.getElementById('editContainer').style.display = 'block';
+            });
+        });
+        
+        // 加载日志到编辑界面
+        function loadLogForEdit(date) {
+            const logs = JSON.parse(localStorage.getItem(`kartLogs_${memberName}`)) || [];
+            const logForDate = logs.find(log => log.date === date) || { date: date };
+            
+            // 填充编辑内容
+            document.getElementById('edit-principle').value = logForDate.principle || '';
+            document.getElementById('edit-content').value = logForDate.content || '';
+            document.getElementById('edit-problems').value = logForDate.problems || '';
+            document.getElementById('edit-solutions').value = logForDate.solutions || '';
+            document.getElementById('edit-harvest').value = logForDate.harvest || '';
+            
+            // 重置照片上传
+            document.getElementById('edit-photo-upload').value = '';
+        }
+        
+        // 保存编辑内容
+        document.getElementById('save-edit').addEventListener('click', function() {
+            const editData = {
+                date: document.getElementById('edit-date').value,
+                principle: document.getElementById('edit-principle').value,
+                content: document.getElementById('edit-content').value,
+                problems: document.getElementById('edit-problems').value,
+                solutions: document.getElementById('edit-solutions').value,
+                harvest: document.getElementById('edit-harvest').value,
+                photo: document.getElementById('edit-photo-preview')?.src || null
+            };
+            
+            let logs = JSON.parse(localStorage.getItem(`kartLogs_${memberName}`)) || [];
+            
+            // 检查是否已存在该日期的日志
+            const existingIndex = logs.findIndex(log => log.date === editData.date);
+            if (existingIndex >= 0) {
+                logs[existingIndex] = editData;
+            } else {
+                logs.unshift(editData);
+            }
+            
+            localStorage.setItem(`kartLogs_${memberName}`, JSON.stringify(logs));
+            
+            document.getElementById('editContainer').style.display = 'none';
+            renderLogs();
+        });
+        
+        // 取消编辑
+        document.getElementById('cancel-edit').addEventListener('click', function() {
+            document.getElementById('editContainer').style.display = 'none';
+        });
+        
+        // 照片上传预览
+        document.getElementById('edit-photo-upload').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const preview = document.createElement('img');
+                    preview.id = 'edit-photo-preview';
+                    preview.src = event.target.result;
+                    preview.className = 'photo-preview';
+                    preview.style.display = 'block';
+                    
+                    const photoContainer = document.querySelector('.edit-card:nth-child(6) .edit-content');
+                    // 移除旧的预览
+                    const oldPreview = document.getElementById('edit-photo-preview');
+                    if (oldPreview) {
+                        photoContainer.removeChild(oldPreview);
+                    }
+                    photoContainer.appendChild(preview);
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+        
+        // 获取当前日志
+        function getCurrentLogs() {
+            return JSON.parse(localStorage.getItem(`kartLogs_${memberName}`)) || [];
+        }
+        
+        // 渲染日志列表
+        function renderLogs() {
+            const logs = getCurrentLogs();
+            const container = document.getElementById('log-container');
+            container.innerHTML = '';
+            
+            if (logs.length === 0) {
+                container.innerHTML = '<p style="text-align:center;color:#7f8c8d;">暂无日志记录</p>';
+                return;
+            }
+            
+            logs.forEach(log => {
+                const entry = document.createElement('div');
+                entry.className = 'log-entry';
+                entry.innerHTML = `
+                    <div class="log-date">${formatDate(log.date)}</div>
+                    ${log.photo ? `` : ''}
+                    <div class="log-content">
+                        <p><strong>工作原理:</strong> ${log.principle || ''}</p>
+                        <p><strong>实习内容:</strong> ${log.content || ''}</p>
+                        <p><strong>问题:</strong> ${log.problems || ''}</p>
+                        <p><strong>解决:</strong> ${log.solutions || ''}</p>
+                        <p><strong>收获:</strong> ${log.harvest || ''}</p>
+                    </div>
+                `;
+                container.appendChild(entry);
+            });
+        }
+        
+        // 格式化日期
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('zh-CN', { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric',
+                weekday: 'long'
+            });
+        }
+        
+        // 纸飞机动画
+        function animatePlanes() {
+            const planes = [
+                { element: document.getElementById('principle-plane'), x: 0, y: 0, speedX: 0.5, speedY: 0.3, angle: 0 },
+                { element: document.getElementById('content-plane'), x: 0, y: 0, speedX: 0.4, speedY: 0.4, angle: 0 },
+                { element: document.getElementById('problem-plane'), x: 0, y: 0, speedX: 0.6, speedY: 0.2, angle: 0 },
+                { element: document.getElementById('solution-plane'), x: 0, y: 0, speedX: 0.3, speedY: 0.5, angle: 0 },
+                { element: document.getElementById('harvest-plane'), x: 0, y: 0, speedX: 0.5, speedY: 0.4, angle: 0 },
+                { element: document.getElementById('photo-plane'), x: 0, y: 0, speedX: 0.7, speedY: 0.3, angle: 0 }
+            ];
+            
+            planes.forEach(plane => {
+                plane.x = Math.random() * window.innerWidth;
+                plane.y = Math.random() * window.innerHeight;
+                updatePlanePosition(plane);
+            });
+            
+            function updatePlanePosition(plane) {
+                plane.element.style.left = `${plane.x}px`;
+                plane.element.style.top = `${plane.y}px`;
+                plane.element.style.transform = `rotate(${plane.angle}deg)`;
+            }
+            
+            function animate() {
+                planes.forEach(plane => {
+                    plane.x += plane.speedX;
+                    plane.y += plane.speedY;
+                    plane.angle += plane.speedX * 0.3;
+                    
+                    if (plane.x > window.innerWidth + 100) {
+                        plane.x = -100;
+                        plane.y = Math.random() * window.innerHeight;
+                    }
+                    
+                    if (plane.y > window.innerHeight + 100) {
+                        plane.y = -100;
+                        plane.x = Math.random() * window.innerWidth;
+                    }
+                    
+                    updatePlanePosition(plane);
+                });
+                
+                requestAnimationFrame(animate);
+            }
+            
+            animate();
+        }
+        
+        // 初始化页面
+        document.getElementById('edit-date').valueAsDate = new Date();
+        renderLogs();
+        animatePlanes();
+    </script>
+</body>
+</html>
