@@ -23,6 +23,9 @@
   },
   "homepage": "https://github.com/Admin1280/1#readme",
   "dependencies": {
+    "@supabase/supabase-js": "^2.50.5",
+    "dotenv": "^17.2.0",
+    "express": "^5.1.0",
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1"
   }

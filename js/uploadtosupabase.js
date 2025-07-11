@@ -9,11 +9,15 @@ async function handleSubmit(e) {
     content: document.getElementById('content').value
   };
 
+  // 更好的做法是通过后端API代理这个请求
+  // 这里展示前端直接调用的方式(不推荐生产环境使用)
+  const apiKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNxdHZ5ZGJvcXZzeGh1cmZ4bGxnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIxNTE5MjgsImV4cCI6MjA2NzcyNzkyOH0.zz-icV0ww852hyHo2WGNciBALdSrdxhAksOISPdc_lg'; // 应该从安全位置获取
+  
   // 调用Supabase API提交数据
   const response = await fetch('https://sqtvydboqvsxhurfxllg.supabase.co/rest/v1/project_logs', {
     method: 'POST',
     headers: {
-      'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNxdHZ5ZGJvcXZzeGh1cmZ4bGxnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIxNTE5MjgsImV4cCI6MjA2NzcyNzkyOH0.zz-icV0ww852hyHo2WGNciBALdSrdxhAksOISPdc_lg', // 注意：生产环境应使用环境变量隐藏密钥
+      'apikey': apiKey,
       'Content-Type': 'application/json'
     },
     body: JSON.stringify(formData)
